@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "researchcrew"
+version = "0.1.0"
+description = "Multi-agent deep research system using Claude"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "rich>=13.9.0",
+    "typer>=0.13.0",
+    "httpx>=0.28.0",
+    "tenacity>=9.0.0",
+]
+
+[project.scripts]
+researchcrew = "researchcrew.cli:app"
