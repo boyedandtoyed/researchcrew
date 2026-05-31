@@ -1,0 +1,7 @@
+services:
+  researchcrew:
+    build: .
+    container_name: researchcrew
+    ports:
+      - "127.0.0.1:3003:3000"
+    restart: unless-stopped
