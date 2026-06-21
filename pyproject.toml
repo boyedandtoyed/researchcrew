@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "researchcrew"
@@ -15,7 +15,19 @@ dependencies = [
     "typer>=0.13.0",
     "httpx>=0.28.0",
     "tenacity>=9.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.12",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
 
 [project.scripts]
 researchcrew = "researchcrew.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

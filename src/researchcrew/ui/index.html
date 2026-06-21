@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ResearchCrew — Multi-Agent Deep Research</title>
+<style>
+  :root {
+    --bg: #0a0608;
+    --panel: #1a1014;
+    --panel-2: #150f12;
+    --border: #3a2228;
+    --accent: #C1440E;
+    --accent-light: #f17b48;
+    --text: #f5e9e4;
+    --muted: #b08a82;
+    --mono: "SFMono-Regular", ui-monospace, "Cascadia Code", "Courier New", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --green:#4dffa1; --red:#ff5470; --yellow:#ffd84d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--sans); color: var(--text);
+    background:
+      radial-gradient(1100px 500px at 85% -10%, rgba(193,68,14,.20), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, rgba(241,123,72,.10), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  header {
+    padding: 22px 28px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    background: linear-gradient(180deg, rgba(26,16,20,.9), rgba(26,16,20,.3));
+    backdrop-filter: blur(6px);
+  }
+  .brand h1 {
+    margin: 0; font-size: 22px; letter-spacing: .5px;
+    background: linear-gradient(90deg, #fff, var(--accent-light));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .brand .sub { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+  .pill {
+    margin-left: auto; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--panel);
+    font-size: 12px; display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .dot.demo { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .dot.bad { background: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+  main { max-width: 980px; margin: 0 auto; padding: 24px; display: grid; gap: 20px; }
+  .panel { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .panel h2 { margin: 0 0 14px; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-light); }
+  .topic-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .topic-row input {
+    flex: 1; min-width: 260px; background: rgba(10,6,8,.7); border: 1px solid var(--border);
+    color: var(--text); padding: 11px 14px; border-radius: 10px; font-size: 14px;
+  }
+  button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-light)); color: #1a0a04; border: 0;
+    padding: 11px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .examples { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .examples button { padding: 6px 12px; font-size: 12px; font-weight: 500; }
+  .stages { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stage {
+    flex: 1; min-width: 140px; background: rgba(10,6,8,.5); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+    transition: border-color .2s;
+  }
+  .stage.active { border-color: var(--accent); color: var(--accent-light); }
+  .stage.done { border-color: var(--green); color: var(--green); }
+  .stage .label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
+  .stage .v { margin-top: 4px; font-size: 14px; }
+  .empty { color: var(--muted); font-family: var(--mono); text-align: center; padding: 32px; }
+  .report h1 { font-size: 22px; margin: 0 0 6px; }
+  .summary { color: var(--text); line-height: 1.6; margin: 14px 0; padding: 14px; background: rgba(10,6,8,.4); border-radius: 10px; border-left: 3px solid var(--accent); }
+  .finding { margin: 14px 0; padding: 14px; background: rgba(10,6,8,.3); border-radius: 10px; border: 1px solid var(--border); }
+  .finding h3 { margin: 0 0 8px; font-size: 15px; color: var(--accent-light); }
+  .finding ul { margin: 6px 0; padding-left: 20px; line-height: 1.6; }
+  .finding li { margin: 3px 0; }
+  .conf { display: inline-block; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; margin-left: 8px; }
+  .conf.high { background: rgba(77,255,161,.15); color: var(--green); }
+  .conf.medium { background: rgba(255,216,77,.15); color: var(--yellow); }
+  .conf.low { background: rgba(255,84,112,.15); color: var(--red); }
+  .conclusions { margin: 14px 0; }
+  .conclusions h3, .further h3 { color: var(--accent-light); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+  .conclusions p, .further li { line-height: 1.6; }
+  .conclusions .arrow { color: var(--accent-light); font-weight: bold; }
+  .sources { color: var(--muted); font-size: 12px; font-family: var(--mono); margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .banner { border: 1px dashed var(--yellow); color: var(--yellow); background: rgba(255,216,77,.08); padding: 10px 14px; border-radius: 10px; font-size: 13px; text-align: center; }
+  .err { color: var(--red); font-family: var(--mono); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>ResearchCrew</h1>
+    <span class="sub">Planner → Researcher ×N → Writer</span>
+  </div>
+  <span class="pill"><span id="dot" class="dot"></span><span id="status">checking…</span></span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Research Topic</h2>
+    <div class="topic-row">
+      <input id="topic" placeholder="e.g. The impact of transformer architecture on modern NLP" />
+      <button id="run" onclick="runResearch()">Research</button>
+    </div>
+    <div class="examples">
+      <button class="ghost" onclick="setTopic('Diffusion models vs GANs for image generation')">Diffusion vs GANs</button>
+      <button class="ghost" onclick="setTopic('Mechanisms of attention in transformers')">Transformer attention</button>
+      <button class="ghost" onclick="setTopic('Retrieval-augmented generation (RAG) tradeoffs')">RAG tradeoffs</button>
+    </div>
+  </section>
+
+  <div id="bannerHolder"></div>
+
+  <section class="panel" id="stagesPanel" style="display:none;">
+    <div class="stages">
+      <div class="stage" id="s-plan"><div class="label">1 · Planner</div><div class="v" id="s-plan-v">queued</div></div>
+      <div class="stage" id="s-research"><div class="label">2 · Researcher</div><div class="v" id="s-research-v">queued</div></div>
+      <div class="stage" id="s-write"><div class="label">3 · Writer</div><div class="v" id="s-write-v">queued</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div id="reportHolder"><div class="empty">Enter a topic and run research to see the crew in action.</div></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function checkHealth() {
+  const dot = $("dot"), txt = $("status");
+  try {
+    const r = await fetch("/health");
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    dot.className = "dot " + (d.mode === "demo" ? "demo" : "ok");
+    txt.textContent = d.mode === "demo" ? "demo mode (no API key)" : "online · " + (d.model || "");
+    if (d.mode === "demo") {
+      $("bannerHolder").innerHTML = `<div class="banner">⚠ Demo mode — add <code>ANTHROPIC_API_KEY</code> to run the live multi-agent system. The pipeline structure is fully functional.</div>`;
+    }
+  } catch {
+    dot.className = "dot bad"; txt.textContent = "offline";
+  }
+}
+checkHealth();
+
+function setTopic(t) { $("topic").value = t; }
+
+function resetStages() {
+  for (const id of ["s-plan","s-research","s-write"]) {
+    const el = $(id);
+    el.classList.remove("active","done");
+    $(id + "-v").textContent = "queued";
+  }
+}
+
+function renderFinding(f, idx) {
+  const confClass = (f.confidence || "medium").toLowerCase();
+  return `<div class="finding">
+    <h3>Finding ${idx}: ${escapeHtml(f.sub_question)} <span class="conf ${confClass}">${f.confidence}</span></h3>
+    <ul>${(f.key_points||[]).map(p => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+    ${f.limitations ? `<div style="color:var(--muted);font-size:12px;">${escapeHtml(f.limitations)}</div>` : ""}
+  </div>`;
+}
+
+function renderReport(report, findings) {
+  const concl = (report.conclusions||[]).map(c => `<p><span class="arrow">→</span> ${escapeHtml(c)}</p>`).join("");
+  const further = (report.further_research||[]).map(f => `<li>${escapeHtml(f)}</li>`).join("");
+  const fHtml = (findings.length ? findings : (report.findings||[])).map((f,i) => renderFinding(f, i+1)).join("");
+  return `<div class="report">
+    <h1>${escapeHtml(report.title)}</h1>
+    <div class="summary">${escapeHtml(report.executive_summary)}</div>
+    ${fHtml}
+    <div class="conclusions"><h3>Conclusions</h3>${concl}</div>
+    ${further ? `<div class="further"><h3>Further Research</h3><ul>${further}</ul></div>` : ""}
+    <div class="sources">${escapeHtml(report.sources_note || "")}</div>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function runResearch() {
+  const topic = $("topic").value.trim();
+  if (!topic) { alert("Enter a topic first."); return; }
+  const runBtn = $("run");
+  runBtn.disabled = true;
+  $("reportHolder").innerHTML = `<div class="empty"><span class="spinner"></span> &nbsp;Contacting crew…</div>`;
+  $("stagesPanel").style.display = "block";
+  resetStages();
+  $("s-plan").classList.add("active");
+  $("s-plan-v").innerHTML = `<span class="spinner"></span> decomposing topic`;
+
+  const findings = [];
+  let report = null;
+  let found = false;
+
+  try {
+    const resp = await fetch("/api/research", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const frames = buf.split("\n\n");
+      buf = frames.pop();
+      for (const frame of frames) {
+        const lines = frame.split("\n");
+        let evt = "message", data = "";
+        for (const ln of lines) {
+          if (ln.startsWith("event:")) evt = ln.slice(6).trim();
+          else if (ln.startsWith("data:")) data += ln.slice(5).trim();
+        }
+        if (!data) continue;
+        let payload;
+        try { payload = JSON.parse(data); } catch { continue; }
+        found = true;
+        handleEvent(evt, payload, findings, (r) => { report = r; });
+      }
+    }
+    if (!found) throw new Error("No response stream from server.");
+    if (!report) $("reportHolder").innerHTML = `<div class="empty">Stream ended without a report.</div>`;
+  } catch (e) {
+    $("reportHolder").innerHTML = `<div class="empty err">Research failed: ${escapeHtml(e.message)}</div>`;
+  } finally {
+    runBtn.disabled = false;
+  }
+}
+
+function handleEvent(evt, p, findings, setReport) {
+  if (evt === "start") return;
+  if (evt === "plan") {
+    $("s-plan").classList.remove("active"); $("s-plan").classList.add("done");
+    $("s-plan-v").textContent = `${p.sub_questions.length} sub-questions`;
+    $("s-research").classList.add("active");
+    $("s-research-v").innerHTML = `<span class="spinner"></span> 0/${p.sub_questions.length}`;
+    return;
+  }
+  if (evt === "finding") {
+    findings.push(p.finding);
+    $("s-research-v").innerHTML = `<span class="spinner"></span> ${p.index}/${p.total}`;
+    $("reportHolder").innerHTML = findings.map((f,i) => renderFinding(f, i+1)).join("");
+    if (p.index === p.total) {
+      $("s-research").classList.remove("active"); $("s-research").classList.add("done");
+      $("s-write").classList.add("active");
+      $("s-write-v").innerHTML = `<span class="spinner"></span> synthesizing`;
+    }
+    return;
+  }
+  if (evt === "report") {
+    setReport(p);
+    $("s-write").classList.remove("active"); $("s-write").classList.add("done");
+    $("s-write-v").textContent = "complete";
+    $("reportHolder").innerHTML = renderReport(p, findings);
+    return;
+  }
+  if (evt === "done") {
+    for (const id of ["s-plan","s-research","s-write"]) {
+      const el = $(id); if (!el.classList.contains("done")) { el.classList.add("done"); }
+    }
+    return;
+  }
+  if (evt === "error") {
+    $("reportHolder").innerHTML = `<div class="empty err">Error: ${escapeHtml(p.message)}</div>`;
+  }
+}
+</script>
+</body>
+</html>
